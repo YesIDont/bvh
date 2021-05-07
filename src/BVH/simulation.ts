@@ -1,16 +1,15 @@
 import * as PIXI from 'pixi.js';
 
-import CircleImage from 'assets/circle.png';
 import { doNTimes } from 'utils/do-n-times';
 import { setupGraphics } from 'utils/graphics';
 import { randomInRange, randomUnitVector } from 'utils/math';
 import { setupCollisions } from './collisions';
 import { debugTimer, setupFPSDisplay } from './debug';
 
-const { min, random } = Math;
+const { min } = Math;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const objectsCount = 20;
+  const objectsCount = 50;
   const { graphicsEngine, /* circlesSprites, makeSprite, */ _debugDraw } = setupGraphics(
     container,
     objectsCount,
@@ -23,12 +22,12 @@ export const setupSimulation = (container: HTMLElement): void => {
 
   let x = 0;
   let y = 0;
-  const offset = 20;
+  const offset = 30;
   const velocities: number[][] = [];
   doNTimes(objectsCount, (indexAsId) => {
     x = randomInRange(offset, worldWidth - offset);
     y = randomInRange(offset, worldHeight - offset * 2);
-    collisions.addCircle(indexAsId, x, y, random() * 80 + 20);
+    collisions.addCircle(indexAsId, x, y, 40);
     velocities[indexAsId] = randomUnitVector();
     // circlesSprites.addChild(makeSprite(CircleImage, x, y, 0.2 * random() * 8 + 1, [0.5]));
   });
@@ -53,9 +52,11 @@ export const setupSimulation = (container: HTMLElement): void => {
     collisions.bodies.forEach((body: number[]) => {
       for (const other of collisions.getPotentials(body)) {
         if (collisions.areCirclesColliding(body, other, result)) {
-          const [overlapLength, overlap_x, overlap_y] = result;
-          body[1] -= overlapLength * overlap_x;
-          body[2] -= overlapLength * overlap_y;
+          const [halfOverlapLength, overlap_x, overlap_y] = result;
+          body[1] -= halfOverlapLength * overlap_x;
+          body[2] -= halfOverlapLength * overlap_y;
+          other[1] += halfOverlapLength * overlap_x;
+          other[2] += halfOverlapLength * overlap_y;
         }
       }
       /** If its outside bounds */
@@ -68,12 +69,11 @@ export const setupSimulation = (container: HTMLElement): void => {
       }
     });
 
-    // collisions.update();
     _debugDraw.clear();
+    // _debugDraw.lineStyle(1, 0x005500);
+    // collisions.drawBVH(_debugDraw);
     _debugDraw.lineStyle(1, 0xffffff);
     collisions.drawCircles(_debugDraw);
-    _debugDraw.lineStyle(1, 0x00ff00);
-    collisions.drawBVH(_debugDraw);
 
     if (debugTimer.update(deltaSeconds)) {
       updateFPSDisplay(deltaSeconds);

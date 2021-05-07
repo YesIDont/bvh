@@ -277,6 +277,10 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   // Returns a list of potential collisions for a body
   function getPotentials(body: number[]): number[][] {
     const potentials: number[][] = [];
+    if (rootBranch.length === 0 || rootBranch[index_isLeaf] === 1) {
+      return potentials;
+    }
+
     _id = body[index_id];
     branch = branches.get(_id)!;
     min_x = branch[index_AABB_left];
@@ -285,10 +289,6 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     max_y = branch[index_AABB_bottom];
 
     let current = rootBranch;
-    if (current.length === 0 || current[index_isLeaf] === 1) {
-      return potentials;
-    }
-
     let traverse_left = true;
     while (current.length > 0) {
       if (traverse_left) {
@@ -325,15 +325,14 @@ export function setupCollisions(bodiesMaxCount = 500): any {
           potentials.push(bodies.get(current[index_id])!);
         }
 
-        parent = current[index_parentId] > -1 ? [] : branches.get(current[index_parentId])!;
-
-        if (parent.length > 0) {
-          while (parent && parent[index_rightId] === current[index_id]) {
+        if (current[index_parentId] > -1) {
+          parent = branches.get(current[index_parentId])! ?? [];
+          while (parent.length > 0 && parent[index_rightId] === current[index_id]) {
             current = parent;
-            parent = branches.get(current[index_parentId])!;
+            parent = current[index_parentId] > -1 ? branches.get(current[index_parentId])! : [];
           }
 
-          current = parent!;
+          current = parent;
         } else {
           break;
         }
