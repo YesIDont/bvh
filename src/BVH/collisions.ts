@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
 
+const { abs, sqrt } = Math;
+
 // Branch
 /* ---------------------*/
 /* 0: id                */
@@ -374,13 +376,14 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     const radius_sum = radiusAScaled + radiusBScaled;
     const length_squared = difference_x * difference_x + difference_y * difference_y;
 
-    if (length_squared > radius_sum * radius_sum) {
+    if (abs(length_squared) > radius_sum * radius_sum) {
       return false;
     }
 
-    _length = Math.sqrt(length_squared);
+    _length = sqrt(length_squared);
 
-    result[0] = radius_sum - _length;
+    /** Half of the overlap length */
+    result[0] = (radius_sum - _length) * 0.5;
     result[1] = difference_x / _length;
     result[2] = difference_y / _length;
 
@@ -405,7 +408,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     });
   }
 
-  function addCircle(id: number, x = -10, y = -10, radius = 1) {
+  function addCircle(id: number, x = -10, y = -10, radius = 1): number[] {
     // prettier-ignore
     const circle = [
       id,                /* 0: id        */
@@ -418,6 +421,8 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     ];
     bodies.set(id, circle);
     insert(circle);
+
+    return circle;
   }
 
   return {
