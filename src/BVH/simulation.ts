@@ -10,7 +10,7 @@ import { debugTimer, setupFPSDisplay } from './debug';
 const { min } = Math;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const objectsCount = 10000;
+  const objectsCount = 20000;
   const { graphicsEngine, circlesSprites, makeSprite, _debugDraw } = setupGraphics(
     container,
     objectsCount,
@@ -21,13 +21,13 @@ export const setupSimulation = (container: HTMLElement): void => {
   const collisions = setupCollisions(objectsCount);
 
   const offset = 30;
-  const velocities: number[][] = [];
+  // const velocities: number[][] = [];
   const initialRadius = 3;
   doNTimes(objectsCount, (indexAsId) => {
     const x = randomInRange(offset, worldWidth - offset);
     const y = randomInRange(offset, worldHeight - offset * 2);
     collisions.addCircle(indexAsId, x, y, initialRadius);
-    velocities[indexAsId] = randomUnitVector();
+    // velocities[indexAsId] = randomUnitVector();
     circlesSprites.addChild(makeSprite(CircleImage, x, y, 0.2 * initialRadius, [0.5]));
   });
   const { children: sprites } = circlesSprites;
@@ -41,24 +41,24 @@ export const setupSimulation = (container: HTMLElement): void => {
     lastTime = frameBeginTime;
 
     collisions.bodies.forEach((body: number[], index: number): void => {
-      body[1] += circleSpeed * velocities[body[0]][0] * deltaSeconds;
-      body[2] += circleSpeed * velocities[body[0]][1] * deltaSeconds;
+      body[1] += circleSpeed * body[3] * deltaSeconds;
+      body[2] += circleSpeed * body[4] * deltaSeconds;
 
       const [_id, x, y, radius] = body;
       /** If the cricle tries to escape world bounds - don't let it! */
       if (x - radius < 0) {
         body[1] -= x - radius;
-        velocities[body[0]][0] *= -1;
+        body[3] *= -1;
       } else if (x + radius > worldWidth) {
         body[1] -= x + radius - worldWidth;
-        velocities[body[0]][0] *= -1;
+        body[3] *= -1;
       }
       if (y - radius < 0) {
         body[2] -= y - radius;
-        velocities[body[0]][1] *= -1;
+        body[4] *= -1;
         /** In case of bottom border take into account StatusBar.height = 20px */
       } else if (y + radius > worldHeight - 20) {
-        velocities[body[0]][1] *= -1;
+        body[4] *= -1;
         body[2] -= y + radius - worldHeight + 20;
       }
 

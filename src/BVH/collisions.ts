@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { randomUnitVector } from 'utils/math';
 
 export function setupCollisions(bodiesMaxCount = 500): any {
   const { min, max, abs, sqrt } = Math;
@@ -46,10 +47,12 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   // Circle properties indexes
   const iX = 1;
   const iY = 2;
-  const iRadius = 3;
-  const iScale = 4;
-  const iTag = 5;
-  const iSpawnTime = 6;
+  const iXV = 3;
+  const iYV = 4;
+  const iRadius = 5;
+  const iScale = 6;
+  const iTag = 7;
+  const iSpawnTime = 8;
 
   // Inserts a body into the BVH
   function insert(body: number[]): void {
@@ -161,8 +164,8 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     }
   }
 
-  function remove(_branch: number[]): void {
-    const id = _branch[iId];
+  function remove(branch: number[]): void {
+    const id = branch[iId];
     /** Don't remove root body/branch */
     if (rootBranch.length > 0 && rootBranch[iId] === id) {
       rootBranch = [];
@@ -170,7 +173,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       return;
     }
 
-    const parentId = _branch[iParentId];
+    const parentId = branch[iParentId];
     const parent = branches[parentId];
     const grandparentId = parent[iParentId];
     const grandparent = branches[grandparentId] ?? [];
@@ -209,7 +212,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
         tempBranch[iAABB_right] = max(xMaxLeft, xMaxRight);
         tempBranch[iAABB_bottom] = max(yMaxLeft, yMaxRight);
 
-        tempBranch = bodies[_branch[iParentId]];
+        tempBranch = bodies[branch[iParentId]];
       }
     } else {
       rootBranch = sibling;
@@ -382,8 +385,11 @@ export function setupCollisions(bodiesMaxCount = 500): any {
 
   /** Draw the Bounding Volume Hierarchy */
   function drawBVH(context: PIXI.Graphics) {
-    branches.forEach((_branch: number[]) => {
-      const [id, isLeaf, xMin, yMin, xMax, yMax] = _branch;
+    branches.forEach((branch: number[]) => {
+      const xMin = branch[iAABB_left];
+      const yMin = branch[iAABB_top];
+      const xMax = branch[iAABB_right];
+      const yMax = branch[iAABB_bottom];
       const width = xMax - xMin;
       const height = yMax - yMin;
       context.drawRect(xMin, yMin, width, height);
@@ -391,15 +397,18 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   }
 
   function addCircle(id: number, x = -10, y = -10, radius = 1): number[] {
+    const [xv, yv] = randomUnitVector();
     // prettier-ignore
     const circle = [
-      id,                /* 0: id        */
-      x,                 /* 1: x         */
-      y,                 /* 2: y         */
-      radius,            /* 3: radius    */
-      1,                 /* 4: scale     */
-      0,                 /* 5: tag       */
-      performance.now(), /* 6: spawnTime */
+      id,                 /* 0: id          */
+      x,                  /* 1: x           */
+      y,                  /* 2: y           */
+      xv,                 /* 3: velocity x  */
+      yv,                 /* 4: velocity y  */
+      radius,             /* 5: radius      */
+      1,                  /* 6: scale       */
+      0,                  /* 7: tag         */
+      performance.now(),  /* 8: spawnTime   */
     ];
     bodies[id] = circle;
     insert(circle);
