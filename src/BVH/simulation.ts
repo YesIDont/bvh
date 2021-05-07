@@ -31,18 +31,17 @@ export const setupSimulation = (container: HTMLElement): void => {
     circlesSprites.addChild(makeSprite(CircleImage, x, y, 0.2 * initialRadius, [0.5]));
   });
   const { children: sprites } = circlesSprites;
-  const speed = 30;
+  const circleSpeed = 30;
   let lastTime = performance.now();
   let deltaSeconds = 0;
-  let frameBeginTime = 0;
   function simulationUpdate() {
-    frameBeginTime = performance.now();
+    const frameBeginTime = performance.now();
     deltaSeconds = min((frameBeginTime - lastTime) / 1000, 1);
     lastTime = frameBeginTime;
 
     collisions.bodies.forEach((body: number[], index: number): void => {
-      body[1] += speed * velocities[body[0]][0] * deltaSeconds;
-      body[2] += speed * velocities[body[0]][1] * deltaSeconds;
+      body[1] += circleSpeed * velocities[body[0]][0] * deltaSeconds;
+      body[2] += circleSpeed * velocities[body[0]][1] * deltaSeconds;
 
       const [_id, x, y, radius] = body;
       /** If the cricle tries to escape world bounds - don't let it! */
