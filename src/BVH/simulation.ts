@@ -7,10 +7,10 @@ import CircleImage from 'assets/circle.png';
 import { setupCollisions } from './collisions';
 import { debugTimer, setupFPSDisplay } from './debug';
 
-const { min, random } = Math;
+const { min } = Math;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const objectsCount = 5000;
+  const objectsCount = 10000;
   const { graphicsEngine, circlesSprites, makeSprite, _debugDraw } = setupGraphics(
     container,
     objectsCount,
@@ -19,26 +19,22 @@ export const setupSimulation = (container: HTMLElement): void => {
   const { updateFPSDisplay } = setupFPSDisplay();
 
   const collisions = setupCollisions(objectsCount);
-  const result = [0, 0, 0];
 
-  let x = 0;
-  let y = 0;
   const offset = 30;
   const velocities: number[][] = [];
-  let radius = 3;
+  const initialRadius = 3;
   doNTimes(objectsCount, (indexAsId) => {
-    x = randomInRange(offset, worldWidth - offset);
-    y = randomInRange(offset, worldHeight - offset * 2);
-    collisions.addCircle(indexAsId, x, y, radius);
+    const x = randomInRange(offset, worldWidth - offset);
+    const y = randomInRange(offset, worldHeight - offset * 2);
+    collisions.addCircle(indexAsId, x, y, initialRadius);
     velocities[indexAsId] = randomUnitVector();
-    circlesSprites.addChild(makeSprite(CircleImage, x, y, 0.2 * radius, [0.5]));
+    circlesSprites.addChild(makeSprite(CircleImage, x, y, 0.2 * initialRadius, [0.5]));
   });
   const { children: sprites } = circlesSprites;
   const speed = 30;
   let lastTime = performance.now();
   let deltaSeconds = 0;
   let frameBeginTime = 0;
-  let id = 0;
   function simulationUpdate() {
     frameBeginTime = performance.now();
     deltaSeconds = min((frameBeginTime - lastTime) / 1000, 1);
@@ -48,7 +44,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       body[1] += speed * velocities[body[0]][0] * deltaSeconds;
       body[2] += speed * velocities[body[0]][1] * deltaSeconds;
 
-      [id, x, y, radius] = body;
+      const [_id, x, y, radius] = body;
       /** If the cricle tries to escape world bounds - don't let it! */
       if (x - radius < 0) {
         body[1] -= x - radius;
@@ -69,21 +65,12 @@ export const setupSimulation = (container: HTMLElement): void => {
       sprites[index].y = body[2];
     });
 
-    collisions.update();
+    collisions.updateBVH();
 
     collisions.bodies.forEach((body: number[]) => {
       for (const other of collisions.getPotentials(body)) {
-        if (collisions.areCirclesColliding(body, other, result)) {
-          const [halfOverlapLength, overlap_x, overlap_y] = result;
-          body[1] -= halfOverlapLength * overlap_x;
-          body[2] -= halfOverlapLength * overlap_y;
-          other[1] += halfOverlapLength * overlap_x;
-          other[2] += halfOverlapLength * overlap_y;
-        }
+        collisions.solveCollision(body[0], other);
       }
-      /** If its outside bounds */
-      x = body[1];
-      y = body[2];
     });
 
     // _debugDraw.clear();

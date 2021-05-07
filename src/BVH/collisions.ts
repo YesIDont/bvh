@@ -2,31 +2,9 @@ import * as PIXI from 'pixi.js';
 
 const { abs, sqrt } = Math;
 
-// Branch
-/* ---------------------*/
-/* 0: id                */
-/* 1: is leaft          */
-/* 2: AABB_left limit   */
-/* 3: AABB_top limit    */
-/* 4: AABB_right limit  */
-/* 5: AABB_bottom limit */
-/* 6: parent id         */
-/* 7: right leaf id     */
-/* 8: left leaf id      */
-
-// Body::Circle
-/* -------------*/
-/* 0: id        */
-/* 1: x         */
-/* 2: y         */
-/* 3: radius    */
-/* 4: scale     */
-/* 5: tag       */
-/* 6: spawnTime */
-
 export function setupCollisions(bodiesMaxCount = 500): any {
   const { min, max } = Math;
-  const bodies = new Map<number, number[]>();
+  const bodies: number[][] = [];
   const branches = new Map<number, number[]>();
   let rootBranch: number[] = [];
 
@@ -36,71 +14,65 @@ export function setupCollisions(bodiesMaxCount = 500): any {
    * bodies ids scope.
    */
   let lastNodeBranchIndex = bodiesMaxCount + 1;
-  const index_id = 0;
+  const iId = 0;
+
+  // Branch
+  /* ---------------------*/
+  /* 0: id                */
+  /* 1: is leaft          */
+  /* 2: AABB_left limit   */
+  /* 3: AABB_top limit    */
+  /* 4: AABB_right limit  */
+  /* 5: AABB_bottom limit */
+  /* 6: parent id         */
+  /* 7: right leaf id     */
+  /* 8: left leaf id      */
 
   // Branch properties indexes
-  const index_isLeaf = 1;
-  const index_AABB_left = 2;
-  const index_AABB_top = 3;
-  const index_AABB_right = 4;
-  const index_AABB_bottom = 5;
-  const index_parentId = 6;
-  const index_rightId = 7;
-  const index_leftId = 8;
+  const iIsLeaf = 1;
+  const iAABB_left = 2;
+  const iAABB_top = 3;
+  const iAABB_right = 4;
+  const iAABB_bottom = 5;
+  const iParentId = 6;
+  const iRightId = 7;
+  const iLeftId = 8;
+
+  // Body::Circle
+  /* -------------*/
+  /* 0: id        */
+  /* 1: x         */
+  /* 2: y         */
+  /* 3: radius    */
+  /* 4: scale     */
+  /* 5: tag       */
+  /* 6: spawnTime */
 
   // Circle properties indexes
-  const index_x = 1;
-  const index_y = 2;
-  const index_radius = 3;
-  const index_scale = 4;
-  const index_tag = 5;
-  const index_spawnTime = 6;
-
-  let _id = 0;
-  let _x = 0;
-  let _y = 0;
-  let _radius = 0;
-  let _length = 0;
-  let min_x = 0;
-  let min_y = 0;
-  let max_x = 0;
-  let max_y = 0;
-  let left_min_x = 0;
-  let left_min_y = 0;
-  let left_max_x = 0;
-  let left_max_y = 0;
-  let right_min_x = 0;
-  let right_min_y = 0;
-  let right_max_x = 0;
-  let right_max_y = 0;
-  let parent_min_x = 0;
-  let parent_min_y = 0;
-  let parent_max_x = 0;
-  let parent_max_y = 0;
-  let parentId = 0;
-  let branchId = 0;
-  let branch: number[] = [];
-  let parent: number[] = [];
-  let grandparent: number[] = [];
-  let newParent: number[] = [];
+  const iX = 1;
+  const iY = 2;
+  const iRadius = 3;
+  const iScale = 4;
+  const iTag = 5;
+  const iSpawnTime = 6;
 
   // Inserts a body into the BVH
   function insert(body: number[]): void {
-    _id = body[index_id];
-    _x = body[index_x];
-    _y = body[index_y];
-    _radius = body[index_radius];
-    min_x = _x - _radius;
-    min_y = _y - _radius;
-    max_x = _x + _radius;
-    max_y = _y + _radius;
+    const id = body[iId];
+    const x = body[iX];
+    const y = body[iY];
+    const radius = body[iRadius];
+    const xMin = x - radius;
+    const yMin = y - radius;
+    const xMax = x + radius;
+    const yMax = y + radius;
 
     /**
      * Create branch node that will represent the body in the tree.
      * Its id should be the same as the id of the body it represents.
      */
-    const newBranch = [_id, 1, min_x, min_y, max_x, max_y, -1, -1, -1];
-    branches.set(_id, newBranch);
+    const newBranch = [id, 1, xMin, yMin, xMax, yMax, -1, -1, -1];
+    branches.set(id, newBranch);
 
     if (rootBranch.length === 0) {
       rootBranch = newBranch;
@@ -113,81 +85,81 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       /** is of BranchType */
-      if (current[index_isLeaf] === 0) {
-        const left = branches.get(current[index_leftId])!;
+      if (current[iIsLeaf] === 0) {
+        const left = branches.get(current[iLeftId])!;
         /** Get left AABB */
-        left_min_x = left[index_AABB_left];
-        left_min_y = left[index_AABB_top];
-        left_max_x = left[index_AABB_right];
-        left_max_y = left[index_AABB_bottom];
+        const xMinLeft = left[iAABB_left];
+        const yMinLeft = left[iAABB_top];
+        const xMaxLeft = left[iAABB_right];
+        const yMaxLeft = left[iAABB_bottom];
 
         /** Simulate new left AABB by extending it with newCircle AABB */
-        const left_new_min_x = min(min_x, left_min_x);
-        const left_new_min_y = min(min_y, left_min_y);
-        const left_new_max_x = max(max_x, left_max_x);
-        const left_new_max_y = max(max_y, left_max_y);
+        const left_new_min_x = min(xMin, xMinLeft);
+        const left_new_min_y = min(yMin, yMinLeft);
+        const left_new_max_x = max(xMax, xMaxLeft);
+        const left_new_max_y = max(yMax, yMaxLeft);
 
-        const left_volume = (left_max_x - left_min_x) * (left_max_y - left_min_y);
+        const left_volume = (xMaxLeft - xMinLeft) * (yMaxLeft - yMinLeft);
         const left_new_volume =
           (left_new_max_x - left_new_min_x) * (left_new_max_y - left_new_min_y);
         const left_difference = left_new_volume - left_volume;
 
         /** Get right AABB */
-        const right = branches.get(current[index_rightId])!;
-        right_min_x = right[index_AABB_left];
-        right_min_y = right[index_AABB_top];
-        right_max_x = right[index_AABB_right];
-        right_max_y = right[index_AABB_bottom];
+        const right = branches.get(current[iRightId])!;
+        const xMinRight = right[iAABB_left];
+        const yMinRight = right[iAABB_top];
+        const xMaxRight = right[iAABB_right];
+        const yMaxRight = right[iAABB_bottom];
 
         /** Simulate new right AABB by extending it with newCircle AABB */
-        const right_new_min_x = min(min_x, right_min_x);
-        const right_new_min_y = min(min_y, right_min_y);
-        const right_new_max_x = max(max_x, right_max_x);
-        const right_new_max_y = max(max_y, right_max_y);
+        const right_new_min_x = min(xMin, xMinRight);
+        const right_new_min_y = min(yMin, yMinRight);
+        const right_new_max_x = max(xMax, xMaxRight);
+        const right_new_max_y = max(yMax, yMaxRight);
 
-        const right_volume = (right_max_x - right_min_x) * (right_max_y - right_min_y);
+        const right_volume = (xMaxRight - xMinRight) * (yMaxRight - yMinRight);
         const right_new_volume =
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
 
-        current[index_AABB_left] = min(left_new_min_x, right_new_min_x);
-        current[index_AABB_top] = min(left_new_min_y, right_new_min_y);
-        current[index_AABB_right] = max(left_new_max_x, right_new_max_x);
-        current[index_AABB_bottom] = max(left_new_max_y, right_new_max_y);
+        current[iAABB_left] = min(left_new_min_x, right_new_min_x);
+        current[iAABB_top] = min(left_new_min_y, right_new_min_y);
+        current[iAABB_right] = max(left_new_max_x, right_new_max_x);
+        current[iAABB_bottom] = max(left_new_max_y, right_new_max_y);
 
         current = left_difference <= right_difference ? left : right;
       }
       // Leaf
       else {
-        parentId = current[index_parentId];
-        grandparent = parentId > -1 ? branches.get(parentId)! : [];
-        parent_min_x = current[index_AABB_left];
-        parent_min_y = current[index_AABB_top];
-        parent_max_x = current[index_AABB_right];
-        parent_max_y = current[index_AABB_bottom];
-        branchId = lastNodeBranchIndex;
+        const parentId = current[iParentId];
+        const grandparent = parentId > -1 ? branches.get(parentId)! : [];
+        const parent_min_x = current[iAABB_left];
+        const parent_min_y = current[iAABB_top];
+        const parent_max_x = current[iAABB_right];
+        const parent_max_y = current[iAABB_bottom];
+        const branchId = lastNodeBranchIndex;
         lastNodeBranchIndex++;
-        newParent = [
+        const newParent = [
           branchId,
           0,
-          min(min_x, parent_min_x),
-          min(min_y, parent_min_y),
-          max(max_x, parent_max_x),
-          max(max_y, parent_max_y),
-          parentId > -1 ? grandparent[index_id] : -1,
-          newBranch[index_id],
-          current[index_id],
+          min(xMin, parent_min_x),
+          min(yMin, parent_min_y),
+          max(xMax, parent_max_x),
+          max(yMax, parent_max_y),
+          parentId > -1 ? grandparent[iId] : -1,
+          newBranch[iId],
+          current[iId],
         ];
         branches.set(branchId, newParent);
-        current[index_parentId] = branchId;
-        newBranch[index_parentId] = branchId;
+        current[iParentId] = branchId;
+        newBranch[iParentId] = branchId;
 
         if (grandparent.length === 0) {
           rootBranch = newParent;
-        } else if (grandparent[index_leftId] === current[index_id]) {
-          grandparent[index_leftId] = branchId;
+        } else if (grandparent[iLeftId] === current[iId]) {
+          grandparent[iLeftId] = branchId;
         } else {
-          grandparent[index_rightId] = branchId;
+          grandparent[iRightId] = branchId;
         }
 
         break;
@@ -196,77 +168,76 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   }
 
   function remove(_branch: number[]): void {
-    _id = _branch[index_id];
+    const id = _branch[iId];
     /** Don't remove root body/branch */
-    if (rootBranch.length > 0 && rootBranch[index_id] === _id) {
+    if (rootBranch.length > 0 && rootBranch[iId] === id) {
       rootBranch = [];
 
       return;
     }
 
-    parentId = _branch[index_parentId];
-    parent = branches.get(parentId)!;
-    const grandparentId = parent[index_parentId];
-    grandparent = grandparentId > -1 ? branches.get(grandparentId)! : [];
-    const parentLeftId = parent[index_leftId];
+    const parentId = _branch[iParentId];
+    const parent = branches.get(parentId)!;
+    const grandparentId = parent[iParentId];
+    const grandparent = grandparentId > -1 ? branches.get(grandparentId)! : [];
+    const parentLeftId = parent[iLeftId];
     const parentLeft = parentLeftId > -1 ? branches.get(parentLeftId)! : [];
-    const sibling = parentLeftId === _id ? branches.get(parent[index_rightId])! : parentLeft;
+    const sibling = parentLeftId === id ? branches.get(parent[iRightId])! : parentLeft;
 
-    sibling[index_parentId] = grandparent[index_id];
+    sibling[iParentId] = grandparent[iId];
 
     if (grandparent.length > 0) {
-      if (grandparent[index_leftId] === parentId) {
-        grandparent[index_leftId] = sibling[index_id];
+      if (grandparent[iLeftId] === parentId) {
+        grandparent[iLeftId] = sibling[iId];
       } else {
-        grandparent[index_rightId] = sibling[index_id];
+        grandparent[iRightId] = sibling[iId];
       }
 
       let tempBranch = grandparent;
 
       while (tempBranch) {
-        const left = branches.get(tempBranch[index_leftId])!;
+        const left = branches.get(tempBranch[iLeftId])!;
         /** Get left AABB */
-        left_min_x = left[index_AABB_left];
-        left_min_y = left[index_AABB_top];
-        left_max_x = left[index_AABB_right];
-        left_max_y = left[index_AABB_bottom];
+        const xMinLeft = left[iAABB_left];
+        const yMinLeft = left[iAABB_top];
+        const xMaxLeft = left[iAABB_right];
+        const yMaxLeft = left[iAABB_bottom];
 
         /** Get right AABB */
-        const right = branches.get(tempBranch[index_rightId])!;
-        right_min_x = right[index_AABB_left];
-        right_min_y = right[index_AABB_top];
-        right_max_x = right[index_AABB_right];
-        right_max_y = right[index_AABB_bottom];
+        const right = branches.get(tempBranch[iRightId])!;
+        const xMinRight = right[iAABB_left];
+        const yMinRight = right[iAABB_top];
+        const xMaxRight = right[iAABB_right];
+        const yMaxRight = right[iAABB_bottom];
 
-        tempBranch[index_AABB_left] = min(left_min_x, right_min_x);
-        tempBranch[index_AABB_top] = min(left_min_y, right_min_y);
-        tempBranch[index_AABB_right] = max(left_max_x, right_max_x);
-        tempBranch[index_AABB_bottom] = max(left_max_y, right_max_y);
+        tempBranch[iAABB_left] = min(xMinLeft, xMinRight);
+        tempBranch[iAABB_top] = min(yMinLeft, yMinRight);
+        tempBranch[iAABB_right] = max(xMaxLeft, xMaxRight);
+        tempBranch[iAABB_bottom] = max(yMaxLeft, yMaxRight);
 
-        tempBranch = bodies.get(_branch[index_parentId])!;
+        tempBranch = bodies[_branch[iParentId]];
       }
     } else {
       rootBranch = sibling;
     }
 
-    branches.delete(_id);
+    branches.delete(id);
     branches.delete(parentId);
   }
 
   /** Updates the BVH. Moved that have changed their positions removed/inserted. */
-  function update(): void {
+  function updateBVH(): void {
     bodies.forEach((body: number[]) => {
-      _x = body[index_x];
-      _y = body[index_y];
-      _radius = body[index_radius];
-      _id = body[index_id];
-      branch = branches.get(_id)!;
+      const x = body[iX];
+      const y = body[iY];
+      const radius = body[iRadius];
+      const branch = branches.get(body[iId])!;
 
       if (
-        _x - _radius < branch[index_AABB_left] ||
-        _y - _radius < branch[index_AABB_top] ||
-        _x + _radius > branch[index_AABB_right] ||
-        _y + _radius > branch[index_AABB_bottom]
+        x - radius < branch[iAABB_left] ||
+        y - radius < branch[iAABB_top] ||
+        x + radius > branch[iAABB_right] ||
+        y + radius > branch[iAABB_bottom]
       ) {
         remove(branch);
         insert(body);
@@ -275,18 +246,18 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   }
 
   // Returns a list of potential collisions for a body
-  function getPotentials(body: number[]): number[][] {
-    const potentials: number[][] = [];
-    if (rootBranch.length === 0 || rootBranch[index_isLeaf] === 1) {
+  function getPotentials(body: number[]): number[] {
+    const potentials: number[] = [];
+    if (rootBranch.length === 0 || rootBranch[iIsLeaf] === 1) {
       return potentials;
     }
 
-    _id = body[index_id];
-    branch = branches.get(_id)!;
-    min_x = branch[index_AABB_left];
-    min_y = branch[index_AABB_top];
-    max_x = branch[index_AABB_right];
-    max_y = branch[index_AABB_bottom];
+    const id = body[iId];
+    const branch = branches.get(id)!;
+    const xMin = branch[iAABB_left];
+    const yMin = branch[iAABB_top];
+    const xMax = branch[iAABB_right];
+    const yMax = branch[iAABB_bottom];
 
     let current = rootBranch;
     let traverse_left = true;
@@ -294,42 +265,42 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       if (traverse_left) {
         traverse_left = false;
 
-        let left = current[index_isLeaf] === 0 ? branches.get(current[index_leftId])! : [];
+        let left = current[iIsLeaf] === 0 ? branches.get(current[iLeftId])! : [];
 
         while (
           left.length > 0 &&
-          left[index_AABB_right] >= min_x &&
-          left[index_AABB_bottom] >= min_y &&
-          left[index_AABB_left] <= max_x &&
-          left[index_AABB_top] <= max_y
+          left[iAABB_right] >= xMin &&
+          left[iAABB_bottom] >= yMin &&
+          left[iAABB_left] <= xMax &&
+          left[iAABB_top] <= yMax
         ) {
           current = left;
-          left = current[index_isLeaf] === 0 ? branches.get(current[index_leftId])! : [];
+          left = current[iIsLeaf] === 0 ? branches.get(current[iLeftId])! : [];
         }
       }
 
-      const isLeaf = current[index_isLeaf] === 1;
-      const right = isLeaf ? [] : branches.get(current[index_rightId])!;
+      const isLeaf = current[iIsLeaf] === 1;
+      const right = isLeaf ? [] : branches.get(current[iRightId])!;
 
       if (
         right.length > 0 &&
-        right[index_AABB_right] > min_x &&
-        right[index_AABB_bottom] > min_y &&
-        right[index_AABB_left] < max_x &&
-        right[index_AABB_top] < max_y
+        right[iAABB_right] > xMin &&
+        right[iAABB_bottom] > yMin &&
+        right[iAABB_left] < xMax &&
+        right[iAABB_top] < yMax
       ) {
         current = right;
         traverse_left = true;
       } else {
-        if (isLeaf && current[index_id] !== _id) {
-          potentials.push(bodies.get(current[index_id])!);
+        if (isLeaf && current[iId] !== id) {
+          potentials.push(current[iId]);
         }
 
-        if (current[index_parentId] > -1) {
-          parent = branches.get(current[index_parentId])! ?? [];
-          while (parent.length > 0 && parent[index_rightId] === current[index_id]) {
+        if (current[iParentId] > -1) {
+          let parent = branches.get(current[iParentId])! ?? [];
+          while (parent.length > 0 && parent[iRightId] === current[iId]) {
             current = parent;
-            parent = current[index_parentId] > -1 ? branches.get(current[index_parentId])! : [];
+            parent = current[iParentId] > -1 ? branches.get(current[iParentId])! : [];
           }
 
           current = parent;
@@ -342,22 +313,24 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     return potentials;
   }
 
-  function areCirclesColliding(a: number[], b: number[], result: number[]): boolean {
+  function solveCollision(aIndex: number, bIndex: number): boolean {
     /** Stage 1: AABB test step by step */
-    const xA = a[index_x];
-    const yA = a[index_y];
-    const radiusA = a[index_radius];
-    const scaleA = a[index_scale];
+    const a = bodies[aIndex];
+    const b = bodies[bIndex];
+    const xA = a[iX];
+    const yA = a[iY];
+    const radiusA = a[iRadius];
+    const scaleA = a[iScale];
     const radiusAScaled = radiusA * scaleA;
     const a_min_x = xA - radiusAScaled;
     const a_min_y = yA - radiusAScaled;
     const a_max_x = xA + radiusAScaled;
     const a_max_y = yA + radiusAScaled;
 
-    const xB = b[index_x];
-    const yB = b[index_y];
-    const radiusB = b[index_radius];
-    const scaleB = b[index_scale];
+    const xB = b[iX];
+    const yB = b[iY];
+    const radiusB = b[iRadius];
+    const scaleB = b[iScale];
     const radiusBScaled = radiusB * scaleB;
     const b_min_x = xB - radiusBScaled;
     const b_min_y = yB - radiusBScaled;
@@ -379,31 +352,35 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       return false;
     }
 
-    _length = sqrt(length_squared);
-
-    /** Half of the overlap length */
-    result[0] = (radius_sum - _length) * 0.5;
-    result[1] = difference_x / _length;
-    result[2] = difference_y / _length;
+    /**
+     * Stage 3: collision response: push back both circles
+     * by the half of the length of their overlap
+     */
+    let length = sqrt(length_squared);
+    const x = difference_x / length;
+    const y = difference_y / length;
+    length = (radius_sum - length) * 0.5;
+    a[1] -= length * x;
+    a[2] -= length * y;
+    b[1] += length * x;
+    b[2] += length * y;
 
     return true;
   }
 
   function drawCircles(context: PIXI.Graphics) {
     bodies.forEach((body: number[]) => {
-      context.drawCircle(body[index_x], body[index_y], body[index_radius]);
+      context.drawCircle(body[iX], body[iY], body[iRadius]);
     });
   }
 
-  let isLeaf = 0;
-  let width = 0;
-  let height = 0;
+  /** Draw the Bounding Volume Hierarchy */
   function drawBVH(context: PIXI.Graphics) {
     branches.forEach((_branch: number[]) => {
-      [_id, isLeaf, min_x, min_y, max_x, max_y] = _branch;
-      width = max_x - min_x;
-      height = max_y - min_y;
-      context.drawRect(min_x, min_y, width, height);
+      const [id, isLeaf, xMin, yMin, xMax, yMax] = _branch;
+      const width = xMax - xMin;
+      const height = yMax - yMin;
+      context.drawRect(xMin, yMin, width, height);
     });
   }
 
@@ -418,38 +395,22 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       0,                 /* 5: tag       */
       performance.now(), /* 6: spawnTime */
     ];
-    bodies.set(id, circle);
+    bodies[id] = circle;
     insert(circle);
 
     return circle;
   }
 
   return {
-    areCirclesColliding,
+    addCircle,
     bodies,
     branches,
-    getPotentials,
-    indexes: {
-      index_id,
-      index_parentId,
-      index_rightId,
-      index_leftId,
-      index_AABB_left,
-      index_AABB_top,
-      index_AABB_right,
-      index_AABB_bottom,
-      index_x,
-      index_y,
-      index_radius,
-      index_scale,
-      index_tag,
-      index_spawnTime,
-    },
-    insert,
-    addCircle,
-    remove,
-    update,
-    drawCircles,
     drawBVH,
+    drawCircles,
+    getPotentials,
+    insert,
+    remove,
+    solveCollision,
+    updateBVH,
   };
 }
