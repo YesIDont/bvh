@@ -44,7 +44,9 @@ export const setupSimulation = (container: HTMLElement): void => {
       body[1] += circleSpeed * body[3] * deltaSeconds;
       body[2] += circleSpeed * body[4] * deltaSeconds;
 
-      const [_id, x, y, radius] = body;
+      const x = body[1];
+      const y = body[2];
+      const radius = body[5];
       /** If the cricle tries to escape world bounds - don't let it! */
       if (x - radius < 0) {
         body[1] -= x - radius;

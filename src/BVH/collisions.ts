@@ -35,14 +35,16 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   const iLeftId = 8;
 
   // Body::Circle
-  /* -------------*/
-  /* 0: id        */
-  /* 1: x         */
-  /* 2: y         */
-  /* 3: radius    */
-  /* 4: scale     */
-  /* 5: tag       */
-  /* 6: spawnTime */
+  /* ------------- */
+  /* 0: id         */
+  /* 1: x          */
+  /* 2: y          */
+  /* 3: velocity x */
+  /* 4: velocity y */
+  /* 5: radius     */
+  /* 6: scale      */
+  /* 7: tag        */
+  /* 8: spawnTime  */
 
   // Circle properties indexes
   const iX = 1;
