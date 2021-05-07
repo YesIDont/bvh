@@ -34,6 +34,7 @@ export const setupSimulation = (container: HTMLElement): void => {
   const circleSpeed = 30;
   let lastTime = performance.now();
   let deltaSeconds = 0;
+
   function simulationUpdate() {
     const frameBeginTime = performance.now();
     deltaSeconds = min((frameBeginTime - lastTime) / 1000, 1);
@@ -65,13 +66,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       sprites[index].y = body[2];
     });
 
-    collisions.updateBVH();
-
-    collisions.bodies.forEach((body: number[]) => {
-      for (const other of collisions.getPotentials(body)) {
-        collisions.solveCollision(body[0], other);
-      }
-    });
+    collisions.solve();
 
     // _debugDraw.clear();
     // _debugDraw.lineStyle(1, 0x005500);

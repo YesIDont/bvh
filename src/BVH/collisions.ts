@@ -314,7 +314,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     return potentials;
   }
 
-  function solveCollision(aIndex: number, bIndex: number): boolean {
+  function areCirclesColliding(aIndex: number, bIndex: number): boolean {
     /** Stage 1: AABB test step by step */
     const a = bodies[aIndex];
     const b = bodies[bIndex];
@@ -369,6 +369,17 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     return true;
   }
 
+  function solveSingle(body: number[]): void {
+    for (const other of getPotentials(body)) {
+      areCirclesColliding(body[0], other);
+    }
+  }
+
+  function solve(): void {
+    updateBVH();
+    bodies.forEach(solveSingle);
+  }
+
   function drawCircles(context: PIXI.Graphics) {
     bodies.forEach((body: number[]) => {
       context.drawCircle(body[iX], body[iY], body[iRadius]);
@@ -411,7 +422,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     getPotentials,
     insert,
     remove,
-    solveCollision,
+    solve,
     updateBVH,
   };
 }
