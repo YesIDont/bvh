@@ -5,6 +5,7 @@ const { abs, sqrt } = Math;
 export function setupCollisions(bodiesMaxCount = 500): any {
   const { min, max } = Math;
   const bodies: number[][] = [];
+  bodies.length = bodiesMaxCount;
   const branches = new Map<number, number[]>();
   let rootBranch: number[] = [];
 
@@ -16,7 +17,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   let lastNodeBranchIndex = bodiesMaxCount + 1;
   const iId = 0;
 
-  // Branch
+  // Branch/Leaf
   /* ---------------------*/
   /* 0: id                */
   /* 1: is leaft          */

@@ -55,9 +55,10 @@ export const setupSimulation = (container: HTMLElement): void => {
       if (y - radius < 0) {
         body[2] -= y - radius;
         velocities[body[0]][1] *= -1;
-      } else if (y + radius > worldHeight) {
+        /** In case of bottom border take into account StatusBar.height = 20px */
+      } else if (y + radius > worldHeight - 20) {
         velocities[body[0]][1] *= -1;
-        body[2] -= y + radius - worldHeight;
+        body[2] -= y + radius - worldHeight + 20;
       }
 
       sprites[index].x = body[1];
