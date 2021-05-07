@@ -1,20 +1,14 @@
 import * as PIXI from 'pixi.js';
 
-const { abs, sqrt } = Math;
-
 export function setupCollisions(bodiesMaxCount = 500): any {
-  const { min, max } = Math;
+  const { min, max, abs, sqrt } = Math;
   const bodies: number[][] = [];
   bodies.length = bodiesMaxCount;
-  const branches = new Map<number, number[]>();
+  const branches: number[][] = [];
+  const avilableNodeBranches: number[] = [];
+  branches.length = 2 * bodiesMaxCount - 1;
+  let lastNodeBranchIndex = bodiesMaxCount;
   let rootBranch: number[] = [];
-
-  /**
-   * For branches playing the role of nodes, that
-   * don't represent bodies keep ids out of
-   * bodies ids scope.
-   */
-  let lastNodeBranchIndex = bodiesMaxCount + 1;
   const iId = 0;
 
   // Branch/Leaf
@@ -73,7 +67,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
      * Its id should be the same as the id of the body it represents.
      */
     const newBranch = [id, 1, xMin, yMin, xMax, yMax, -1, -1, -1];
-    branches.set(id, newBranch);
+    branches[id] = newBranch;
 
     if (rootBranch.length === 0) {
       rootBranch = newBranch;
@@ -87,7 +81,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     while (true) {
       /** is of BranchType */
       if (current[iIsLeaf] === 0) {
-        const left = branches.get(current[iLeftId])!;
+        const left = branches[current[iLeftId]];
         /** Get left AABB */
         const xMinLeft = left[iAABB_left];
         const yMinLeft = left[iAABB_top];
@@ -106,7 +100,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
         const left_difference = left_new_volume - left_volume;
 
         /** Get right AABB */
-        const right = branches.get(current[iRightId])!;
+        const right = branches[current[iRightId]];
         const xMinRight = right[iAABB_left];
         const yMinRight = right[iAABB_top];
         const xMaxRight = right[iAABB_right];
@@ -133,13 +127,12 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       // Leaf
       else {
         const parentId = current[iParentId];
-        const grandparent = parentId > -1 ? branches.get(parentId)! : [];
+        const grandparent = branches[parentId] ?? [];
         const parent_min_x = current[iAABB_left];
         const parent_min_y = current[iAABB_top];
         const parent_max_x = current[iAABB_right];
         const parent_max_y = current[iAABB_bottom];
-        const branchId = lastNodeBranchIndex;
-        lastNodeBranchIndex++;
+        const branchId = avilableNodeBranches.pop() ?? lastNodeBranchIndex++;
         const newParent = [
           branchId,
           0,
@@ -151,7 +144,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
           newBranch[iId],
           current[iId],
         ];
-        branches.set(branchId, newParent);
+        branches[branchId] = newParent;
         current[iParentId] = branchId;
         newBranch[iParentId] = branchId;
 
@@ -178,12 +171,12 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     }
 
     const parentId = _branch[iParentId];
-    const parent = branches.get(parentId)!;
+    const parent = branches[parentId];
     const grandparentId = parent[iParentId];
-    const grandparent = grandparentId > -1 ? branches.get(grandparentId)! : [];
+    const grandparent = branches[grandparentId] ?? [];
     const parentLeftId = parent[iLeftId];
-    const parentLeft = parentLeftId > -1 ? branches.get(parentLeftId)! : [];
-    const sibling = parentLeftId === id ? branches.get(parent[iRightId])! : parentLeft;
+    const parentLeft = branches[parentLeftId] ?? [];
+    const sibling = parentLeftId === id ? branches[parent[iRightId]] : parentLeft;
 
     sibling[iParentId] = grandparent[iId];
 
@@ -197,7 +190,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       let tempBranch = grandparent;
 
       while (tempBranch) {
-        const left = branches.get(tempBranch[iLeftId])!;
+        const left = branches[tempBranch[iLeftId]];
         /** Get left AABB */
         const xMinLeft = left[iAABB_left];
         const yMinLeft = left[iAABB_top];
@@ -205,7 +198,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
         const yMaxLeft = left[iAABB_bottom];
 
         /** Get right AABB */
-        const right = branches.get(tempBranch[iRightId])!;
+        const right = branches[tempBranch[iRightId]];
         const xMinRight = right[iAABB_left];
         const yMinRight = right[iAABB_top];
         const xMaxRight = right[iAABB_right];
@@ -222,8 +215,9 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       rootBranch = sibling;
     }
 
-    branches.delete(id);
-    branches.delete(parentId);
+    avilableNodeBranches.push(id, parentId);
+    // branches.delete(id);
+    // branches.delete(parentId);
   }
 
   /** Updates the BVH. Moved that have changed their positions removed/inserted. */
@@ -232,7 +226,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       const x = body[iX];
       const y = body[iY];
       const radius = body[iRadius];
-      const branch = branches.get(body[iId])!;
+      const branch = branches[body[iId]];
 
       if (
         x - radius < branch[iAABB_left] ||
@@ -254,7 +248,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     }
 
     const id = body[iId];
-    const branch = branches.get(id)!;
+    const branch = branches[id];
     const xMin = branch[iAABB_left];
     const yMin = branch[iAABB_top];
     const xMax = branch[iAABB_right];
@@ -266,7 +260,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       if (traverse_left) {
         traverse_left = false;
 
-        let left = current[iIsLeaf] === 0 ? branches.get(current[iLeftId])! : [];
+        let left = current[iIsLeaf] === 0 ? branches[current[iLeftId]] : [];
 
         while (
           left.length > 0 &&
@@ -276,12 +270,12 @@ export function setupCollisions(bodiesMaxCount = 500): any {
           left[iAABB_top] <= yMax
         ) {
           current = left;
-          left = current[iIsLeaf] === 0 ? branches.get(current[iLeftId])! : [];
+          left = current[iIsLeaf] === 0 ? branches[current[iLeftId]] : [];
         }
       }
 
       const isLeaf = current[iIsLeaf] === 1;
-      const right = isLeaf ? [] : branches.get(current[iRightId])!;
+      const right = isLeaf ? [] : branches[current[iRightId]];
 
       if (
         right.length > 0 &&
@@ -298,10 +292,10 @@ export function setupCollisions(bodiesMaxCount = 500): any {
         }
 
         if (current[iParentId] > -1) {
-          let parent = branches.get(current[iParentId])! ?? [];
+          let parent = branches[current[iParentId]] ?? [];
           while (parent.length > 0 && parent[iRightId] === current[iId]) {
             current = parent;
-            parent = current[iParentId] > -1 ? branches.get(current[iParentId])! : [];
+            parent = branches[current[iParentId]] ?? [];
           }
 
           current = parent;
