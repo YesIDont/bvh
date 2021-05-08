@@ -177,8 +177,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
 
     const parentId = branch[iParentId];
     const parent = branches[parentId];
-    const grandparentId = parent[iParentId];
-    const grandparent = branches[grandparentId] ?? [];
+    const grandparent = branches[parent[iParentId]] ?? [];
     const parentLeftId = parent[iLeftId];
     const parentLeft = branches[parentLeftId] ?? [];
     const sibling = parentLeftId === id ? branches[parent[iRightId]] : parentLeft;
