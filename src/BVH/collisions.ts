@@ -220,12 +220,20 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     }
 
     avilableNodeBranches.push(id, parentId);
-    // branches.delete(id);
-    // branches.delete(parentId);
   }
 
   /** Updates the BVH. Moved that have changed their positions removed/inserted. */
   function updateBVH(): void {
+    /**
+     * TODO: instead of iterating over all bodies
+     * create array of ids of objects, that should
+     * have their BVH updated. Object who's position
+     * was changed will have it's id placed in that
+     * array and after update removed from the array.
+     * It's a solution to collisions where most of
+     * bodies are static, otherwise it could do more
+     * harm than optimisation.
+     */
     bodies.forEach((body: number[]) => {
       const x = body[iX];
       const y = body[iY];
