@@ -3,11 +3,13 @@ import { randomUnitVector } from 'utils/math';
 
 export function setupCollisions(bodiesMaxCount = 500): any {
   const { min, max, abs, sqrt } = Math;
-  const bodies: number[][] = [];
+  let bodies: number[][] = [];
   bodies.length = bodiesMaxCount;
-  const branches: number[][] = [];
-  const avilableNodeBranches: number[] = [];
+  bodies.fill([]);
+  let branches: number[][] = [];
   branches.length = 2 * bodiesMaxCount - 1;
+  branches.fill([]);
+  let avilableNodeBranches: number[] = [];
   let lastNodeBranchIndex = bodiesMaxCount;
   let rootBranch: number[] = [];
   const iId = 0;
@@ -177,8 +179,8 @@ export function setupCollisions(bodiesMaxCount = 500): any {
 
     /**
      * Get sibling of the branch being removed
-     * and make it sibling of the parent (child of
-     * grandparent)
+     * and make it sibling of the parent (child
+     * of grandparent)
      */
     const parentId = branch[iParentId];
     const parent = branches[parentId];
@@ -235,12 +237,13 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   /**
    * Updates the BVH. Bodies that have changed their positions should be removed/inserted.
    */
-  function updateBVH(): void {
-    bodies.forEach((body: number[]) => {
-      const branch = branches[body[iId]];
-      remove(branch);
-      insert(body);
-    });
+  function updateAllBVH(): void {
+    branches = [];
+    branches.length = 2 * bodiesMaxCount - 1;
+    rootBranch = [];
+    lastNodeBranchIndex = bodiesMaxCount;
+    avilableNodeBranches = [];
+    bodies.forEach(insert);
   }
 
   // Returns a list of potential collisions for a body
@@ -373,7 +376,7 @@ export function setupCollisions(bodiesMaxCount = 500): any {
   }
 
   function solve(): void {
-    updateBVH();
+    updateAllBVH();
     bodies.forEach(solveSingle);
   }
 
@@ -426,6 +429,6 @@ export function setupCollisions(bodiesMaxCount = 500): any {
     insert,
     remove,
     solve,
-    updateBVH,
+    updateBVH: updateAllBVH,
   };
 }
