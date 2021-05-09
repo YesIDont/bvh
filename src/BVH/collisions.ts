@@ -137,9 +137,9 @@ export function setupCollisions(bodiesMaxCount = 500): any {
         const parent_min_y = current[iAABB_top];
         const parent_max_x = current[iAABB_right];
         const parent_max_y = current[iAABB_bottom];
-        const branchId = avilableNodeBranches.pop() ?? lastNodeBranchIndex++;
+        const newParentId = avilableNodeBranches.pop() ?? lastNodeBranchIndex++;
         const newParent = [
-          branchId,
+          newParentId,
           0,
           min(xMin, parent_min_x),
           min(yMin, parent_min_y),
@@ -149,16 +149,16 @@ export function setupCollisions(bodiesMaxCount = 500): any {
           newBranch[iId],
           current[iId],
         ];
-        branches[branchId] = newParent;
-        current[iParentId] = branchId;
-        newBranch[iParentId] = branchId;
+        branches[newParentId] = newParent;
+        current[iParentId] = newParentId;
+        newBranch[iParentId] = newParentId;
 
         if (grandparent.length === 0) {
           rootBranch = newParent;
         } else if (grandparent[iLeftId] === current[iId]) {
-          grandparent[iLeftId] = branchId;
+          grandparent[iLeftId] = newParentId;
         } else {
-          grandparent[iRightId] = branchId;
+          grandparent[iRightId] = newParentId;
         }
 
         break;
@@ -175,6 +175,11 @@ export function setupCollisions(bodiesMaxCount = 500): any {
       return;
     }
 
+    /**
+     * Get sibling of the branch being removed
+     * and make it sibling of the parent (child of
+     * grandparent)
+     */
     const parentId = branch[iParentId];
     const parent = branches[parentId];
     const grandparent = branches[parent[iParentId]] ?? [];
@@ -193,6 +198,11 @@ export function setupCollisions(bodiesMaxCount = 500): any {
 
       let tempBranch = grandparent;
 
+      /**
+       * For grandparent that has now new child
+       * compute new AABB and traverse upt the tree
+       * up to the root and do the same at each step.
+       */
       while (tempBranch) {
         const left = branches[tempBranch[iLeftId]];
         /** Get left AABB */
